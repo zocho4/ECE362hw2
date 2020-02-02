@@ -1,0 +1,44 @@
+****Things to sort out****
+ - How does while loop work for reading/writing
+ - How to account for leftover bytes...can I XOR strings with uneven number of bytes?
+
+////twist.c////
+
+MAIN
+	PARSE the commmand line arguments
+	    be sure to:
+		- check that the block size is ok
+		- defaults are established
+	
+	OPEN the input file for read only (or use stdin)
+	OPEN the output file for write only (or use stdout)
+
+        WHILE (not EOF) //a do-while may be better here
+                READ block size number of bytes into buffer from file
+		REVERSE bytes into new buffer
+		WRITE new buffer contents into output file
+		//be sure to properly deal with \0 and \n
+        END WHILE
+END MAIN
+
+
+
+////xor.c////
+
+MAIN
+	PARSE the commmand line arguments
+        OPEN the input file for read only (or use stdin)
+        OPEN the output file for write only (or use stdout)
+
+	WHILE (not EOF)
+		READ mask sized block of bytes into read buf from file
+		XOR buf with mask and store in write buf
+		WRITE write buf to output file
+	END WHILE
+END MAIN
+
+
+
+////tx.c////
+
+NO IDEA!!!
