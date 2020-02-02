@@ -20,12 +20,12 @@ This is the main function for twist.
 int main(int argc, char *argv[]) {
 
     //declare all the variables for holding command line arguments
-    char *inputFile = NULL; //this will point to dynamic char array
+    char *inputFile = NULL; //this will point to string in dynamic array if not stdin
     int fdIN = STDIN_FILENO;
-    char *outputFile = NULL; //same deal for output file
+    char *outputFile = NULL; //this will point to string if not stdout
     int fdOUT = STDOUT_FILENO;
     int currentArg = 1; //for tracking which argv we are checking
-    int blockSize = 10;
+    int blockSize = 10; //to be modified by
 
     //check and parse the command line arguments
     printf("argc is %d\n", argc);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
             //malloc space for the input file name
             if ( (inputFile = (char*)malloc(sizeof(argv[currentArg+1]))) == NULL ) {
                 write(STDERR_FILENO, "Could not allocate memory for input file name.\n", 47);
-                exit(-1);
+                exit(1);
             }
             strcpy(inputFile, argv[currentArg+1]);
             printf("The input file name is: %s\n", inputFile);
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
             //same deal for output file
             if ( (outputFile = (char*)malloc(sizeof(argv[currentArg+1]))) == NULL ) {
                 write(STDERR_FILENO, "Could not allocate memory for output filename.\n", 48);
-                exit(-1);
+                exit(1);
             }
             strcpy(outputFile, argv[currentArg+1]);
             printf("The output file name is: %s\n", outputFile);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 	else if (strcmp(argv[currentArg], "-b") == 0) {
             printf("The block size is %s as a string.\n", argv[currentArg+1]);
             blockSize = atoi(argv[currentArg+1]);
-            if (blockSize<1) {
+            if (blockSize<1 | blockSize>1024) {
                 write(STDERR_FILENO, "Not a valid block size.\n", 24);
                 blockSize = 10;
             }
@@ -65,7 +65,8 @@ int main(int argc, char *argv[]) {
             ++currentArg; ++currentArg;
         }
 	else { // default case
-            printf("Not a valid command line argument!\n");
+            printf("%s:\n", argv[currentArg]);
+            write(STDERR_FILENO, "Not a valid argument.\n", 22);
             //skip to checking the next argv
             ++currentArg;
         }
@@ -74,17 +75,35 @@ int main(int argc, char *argv[]) {
 
     //if IO files were specified then open them
     if (inputFile != NULL) {
-        fdIN = open();
+        //open input file for read only with read permissions for everyone
+        fdIN = open(inputFile, O_RDONLY, S_IRUSR|S_IRGRP|S_IROTH);
+        if (fdIN < 0) { //if open error then print and exit
+            write(STDERR_FILENO, "Unable to open input file.\n", 27);
+            exit(1);
+        }
     }
     if (outputFile != NULL) {
-        fdOUT = open();
+        //open output file for write only with write permissions for everyone
+        //we want this file to be empty every time and crated if none exists
+        fdOUT = open(outputFile, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IWGRP|S_IWOTH);
+        if  (fdOUT < 0) { //if open error then print and exit
+            write(STDERR_FILENO, "Unable to open output file.\n", 28);
+            exit(1);
+        }
     }
     //check value of all arguments
     printf("Input file name is: %s\n", inputFile);
+    printf("fdIN is: %d\n", fdIN);
     printf("Output file name is: %s\n", outputFile);
+    printf("fdOUT is: %d\n", fdOUT);
     printf("Block size is: %d\n", blockSize);
 
-    return(0);
+
+    //free all allocated memory
+    free(inputFile);
+    free(outputFile);
+
+    exit(0);
 }
 
 
