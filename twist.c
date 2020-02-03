@@ -15,8 +15,10 @@ This is the main function for twist.
 
 //////////Prototypes//////////
 //void parseArgs();
+void flushBuf(char *buffer, int bufSize);
+void reverseBytes(char *readBuf, char *writeBuf, int blockSize);
 
-
+////////////////////MAIN////////////////////
 int main(int argc, char *argv[]) {
 
     //declare all the variables for holding command line arguments
@@ -25,7 +27,7 @@ int main(int argc, char *argv[]) {
     char *outputFile = NULL; //this will point to string if not stdout
     int fdOUT = STDOUT_FILENO;
     int currentArg = 1; //for tracking which argv we are checking
-    int blockSize = 10; //to be modified by
+    int blockSize = 10; //default will be modified from input args
 
     //check and parse the command line arguments
     printf("argc is %d\n", argc);
@@ -84,8 +86,9 @@ int main(int argc, char *argv[]) {
     }
     if (outputFile != NULL) {
         //open output file for write only with write permissions for everyone
-        //we want this file to be empty every time and crated if none exists
-        fdOUT = open(outputFile, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IWGRP|S_IWOTH);
+        //user also needs read permissions so I can check the result later
+        //we want this file to be empty every time and created if none exists
+        fdOUT = open(outputFile, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IWGRP|S_IWOTH|S_IRUSR);
         if  (fdOUT < 0) { //if open error then print and exit
             write(STDERR_FILENO, "Unable to open output file.\n", 28);
             exit(1);
@@ -98,19 +101,94 @@ int main(int argc, char *argv[]) {
     printf("fdOUT is: %d\n", fdOUT);
     printf("Block size is: %d\n", blockSize);
 
+    //declare variables for tracking number of bytes read/written
+    ssize_t nBytesRead = 0;
+    ssize_t nBytesWritten = 0;
 
-    //free all allocated memory
+    //malloc space for the buffers used to read and write
+    char *readBuf = (char*)malloc(blockSize*sizeof(char));
+    char *writeBuf = (char*)malloc(blockSize*sizeof(char));
+
+    //test out the reverseByte function
+    flushBuf(readBuf, blockSize);
+    flushBuf(writeBuf, blockSize);
+    printf("readBuf after flushing is -%s-\n", readBuf);
+    printf("writeBuf after flushing is -%s-\n", writeBuf);
+    readBuf[0] = 'a';
+    readBuf[1] = 'b';
+    reverseBytes(readBuf, writeBuf, blockSize);
+    printf("readBuf after reverse is -%s-\n", readBuf);
+    printf("writeBuf after reverse is -%s-\n", writeBuf);
+
+/*
+    //read in twice, copy over and write out twice
+    nBytesRead = read(fdIN, (void*)readBuf, blockSize);
+    printf("We wanted to read %d byte(s) and read %ld byte(s)\n", blockSize, nBytesRead);
+    reverseBytes(readBuf, writeBuf, blockSize);
+    flushBuf(readBuf, blockSize);
+    //printf("Byte(s) read then written are:\n");
+    nBytesWritten = write(fdOUT, (void*)writeBuf, blockSize);
+    flushBuf(writeBuf, blockSize);
+    //printf("\n");
+    printf("We wanted to write %d bytes and wrote %ld byte(s)\n", blockSize, nBytesWritten);
+
+    nBytesRead = read(fdIN, (void*)readBuf, blockSize);
+    printf("We wanted to read %d byte(s) and read %ld byte(s)\n", blockSize, nBytesRead);
+    reverseBytes(readBuf, writeBuf, blockSize);
+    flushBuf(readBuf, blockSize);
+    printf("readBuf after flushing is -%s-.\n", readBuf);
+    //printf("Byte(s) read then written are:\n");
+    nBytesWritten = write(fdOUT, (void*)writeBuf, blockSize);
+    flushBuf(writeBuf, blockSize);
+    printf("writeBuf after flushing is -%s-\n", writeBuf);
+    //printf("\n");
+    printf("We wanted to write %d bytes and wrote %ld byte(s)\n", blockSize, nBytesWritten);
+*/
+/*
+    while ( ( nBytesRead = read(fdIN, (void*)readBuf, blockSize) ) > 0 ) {
+
+    }
+*/
+
+    //(close files) and free all allocated memory
     free(inputFile);
     free(outputFile);
+    free(readBuf);
+    free(writeBuf);
+    //close();
+    //close();
 
     exit(0);
 }
+////////////////////END MAIN////////////////////
 
+
+
+////////Functions////////
+/*
+Inputs: pointer to dynamic char array
+Outputs: none
+This function clears the contents of a read/write buffer. This way nothing
+is left over from a previous read and nothing unexpected gets written.
+*/
+void flushBuf(char *buffer, int bufSize) {
+    for (int i=0; i<bufSize; ++i) {
+        buffer[i] = '\0';
+    }
+    return;
+}
 
 /*
-twist checklist
-( ) parse command line args
-( ) move parsing into a function
-
-
+Inputs: readBuf (bytes read), writeBuf (bytes written) and blockSize (size of both)
+Outputs: none
+This is the function that does the actual twisting. It copies readBuf into
+writeBuf in reverse order.
 */
+void reverseBytes(char *readBuf, char *writeBuf, int blockSize) {
+    for (int i=0; i<blockSize; ++i) {
+        printf("BEFORE: writeBuf[%d] = -%c-\n", i, writeBuf[i]);
+        writeBuf[i] = readBuf[blockSize-i];
+        printf("AFTER: writeBuf[%d] = -%c-\n", i, writeBuf[i]);
+    }
+    return;
+}
