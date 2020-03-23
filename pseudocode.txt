@@ -41,4 +41,22 @@ END MAIN
 
 ////tx.c////
 
-NO IDEA!!!
+MAIN
+	PARSE the command line arguments
+	DECLARE the pipe
+	FORK the process 
+
+	PARENT PROCESS //twist
+		CLOSE reading end of the pipe
+		EXEC twist(arguments)
+	END PARENT PROCESS
+
+
+	CHILD PROCESS //xor
+		CLOSE writing end of the pipe
+		EXEC xor(arguments)
+	END CHILD PROCESS
+
+END MAIN
+
+//does exec work for the parent process? yes
